@@ -644,25 +644,16 @@ function validate() {
   return msgs;
 }
 
-// ── Generate XLSX via Pyodide (Python in browser) ────────────────
-// Template is the openpyxl-generated styled base, embedded as base64.
-// Pyodide loads once, then openpyxl fills values on each generate call.
-
-const TEMPLATE_B64 = "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";
+// ── Generate XLSX — pure Python stdlib via Pyodide (no packages needed) ──
 
 let pyodideReady = null;
-let pyodide     = null;
+let pyodide = null;
 
 async function loadPyodideOnce() {
   if (pyodideReady) return pyodideReady;
-  pyodideReady = (async () => {
-    pyodide = await loadPyodide();
-    await pyodide.loadPackage('openpyxl');
-  })();
+  pyodideReady = (async () => { pyodide = await loadPyodide(); })();
   return pyodideReady;
 }
-
-// Pre-load Pyodide in background as soon as page loads
 window.addEventListener('load', () => {
   if (typeof loadPyodide === 'function') loadPyodideOnce().catch(() => {});
 });
@@ -670,88 +661,133 @@ window.addEventListener('load', () => {
 async function generateXlsx() {
   const errors = validate();
   if (errors.length) {
-    alert('Ju lutemi plotësoni fushat e mëposhtme:\n\n' + errors.join('\n'));
+    alert('Ju lutemi plotesoni fushat e meposhtme:\n\n' + errors.join('\n'));
     return;
   }
-
   const btn = document.querySelector('.gen-btn');
-  const origText = btn.innerHTML;
+  const origHTML = btn.innerHTML;
   btn.innerHTML = '⏳ Duke gjeneruar...';
   btn.disabled = true;
-
   try {
     await loadPyodideOnce();
-
     const entries = getEntries();
-    const entriesJson = JSON.stringify(entries);
 
-    // Pass data to Python via pyodide globals (avoids JS template literal escaping)
-    pyodide.globals.set('entries_json', entriesJson);
-    pyodide.globals.set('template_b64', TEMPLATE_B64);
+    // Pass all data and XML templates as pyodide globals (avoids any quoting issues)
+    pyodide.globals.set('entries_json',    JSON.stringify(entries));
+    pyodide.globals.set('CT_XML',          "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/><Override PartName=\"/xl/worksheets/sheet1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/><Override PartName=\"/xl/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml\"/><Override PartName=\"/xl/sharedStrings.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml\"/></Types>");
+    pyodide.globals.set('RELS_XML',        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>");
+    pyodide.globals.set('WB_RELS_XML',     "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/><Relationship Id=\"rId2\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/><Relationship Id=\"rId3\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings\" Target=\"sharedStrings.xml\"/></Relationships>");
+    pyodide.globals.set('WORKBOOK_XML',    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><sheets><sheet name=\"Elektriket\" sheetId=\"1\" r:id=\"rId1\"/></sheets></workbook>");
+    pyodide.globals.set('STYLES_XML',      "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><fonts count=\"4\"><font><sz val=\"11\"/><name val=\"Calibri\"/></font><font><sz val=\"14\"/><name val=\"Calibri\"/></font><font><sz val=\"12\"/><name val=\"Calibri\"/></font><font><sz val=\"14\"/><b/><name val=\"Calibri\"/></font></fonts><fills count=\"4\"><fill><patternFill patternType=\"none\"/></fill><fill><patternFill patternType=\"gray125\"/></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FF99CCFF\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFFFFFFF\"/></patternFill></fill></fills><borders count=\"3\"><border><left/><right/><top/><bottom/></border><border><left style=\"thin\"><color rgb=\"FF000000\"/></left><right style=\"thin\"><color rgb=\"FF000000\"/></right><top style=\"thin\"><color rgb=\"FF000000\"/></top><bottom style=\"thin\"><color rgb=\"FF000000\"/></bottom></border><border><left style=\"thin\"><color rgb=\"FF000000\"/></left><right style=\"thin\"><color rgb=\"FF000000\"/></right><top style=\"thin\"><color rgb=\"FF000000\"/></top><bottom/></border></borders><cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs><cellXfs count=\"7\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\"/><xf numFmtId=\"0\" fontId=\"3\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"2\" fillId=\"2\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"top\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"2\" fillId=\"2\" borderId=\"2\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"top\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"2\" fillId=\"2\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"top\" wrapText=\"0\"/></xf><xf numFmtId=\"0\" fontId=\"1\" fillId=\"3\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"top\" wrapText=\"0\"/></xf><xf numFmtId=\"0\" fontId=\"1\" fillId=\"3\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"top\" wrapText=\"1\"/></xf></cellXfs></styleSheet>");
 
-    const result = await pyodide.runPythonAsync(`
-import base64, io, json
-from copy import copy
-from openpyxl import load_workbook
+    const b64 = await pyodide.runPythonAsync(`
+import zipfile, io, base64, json
 
-wb = load_workbook(io.BytesIO(base64.b64decode(template_b64)))
-ws = wb.active
-TMPL = 6
-entries = json.loads(entries_json)
+def xe(s):
+    s = str(s) if s is not None else ''
+    return s.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;').replace('"','&quot;')
 
-def clone_row(src, dst):
-    for col in range(1, 13):
-        s = ws.cell(src, col)
-        d = ws.cell(dst, col)
-        d.font      = copy(s.font)
-        d.fill      = copy(s.fill)
-        d.alignment = copy(s.alignment)
-        d.border    = copy(s.border)
-    h = ws.row_dimensions[src].height if src in ws.row_dimensions else 37.5
-    ws.row_dimensions[dst].height = h
+def si(strings, str_map, s):
+    s = str(s) if s is not None else ''
+    if s not in str_map:
+        str_map[s] = len(strings)
+        strings.append(s)
+    return str_map[s]
+
+def cs(ref, val, s, t, strings, str_map):
+    if t == 'n':
+        return '<c r="' + ref + '" s="' + str(s) + '" t="n"><v>' + xe(str(val)) + '</v></c>'
+    idx = si(strings, str_map, val)
+    return '<c r="' + ref + '" s="' + str(s) + '" t="s"><v>' + str(idx) + '</v></c>'
+
+entries  = json.loads(entries_json)
+strings  = []
+str_map  = {}
+CL       = [chr(65+i) for i in range(12)]
+HDRS     = ['Nr.','Emertimi i Subjektit','Nr. Prot dhe data e kerkeses per regjistrim',
+            'Emertimi i impiantit, pajisjes, instalimit',
+            'Vendndodhja e pajisjes, impiantit, instalimit elektrik',
+            'Fuqia e plote e instaluar','Niveli i tensionit','Gjatesia e linjes',
+            'Lloji i shtyllezimit dhe vendosjes','Lloji i tokezimit',
+            'Siperfaqja dhe lartesia e mbrojtur nga rrufepritesi',
+            'Sip. e ambjentit te instalim brendsh./dispozitivi Diferencial']
+UNITS    = {5:'(kVA)',6:'(kV)',7:'(km)',10:'(m2)',11:'(m2)'}
+WRAP_D   = {1,3,4,11}
+COL_W    = [4.1,21.0,16.4,38.0,30.9,22.1,21.7,21.0,13.4,21.0,63.7,31.6]
+
+rows = []
+rows.append('<row r="1" ht="5" customHeight="1"></row>')
+title = 'DATABASE E RREGJISTRIMIT TE PAJISJEVE, IMPIANTEVE, INSTALIMEVE ELEKTRIKE'
+rows.append('<row r="2" ht="18" customHeight="1">' + cs('A2',title,1,'s',strings,str_map) + '</row>')
+rows.append('<row r="3" ht="11.25" customHeight="1"></row>')
+
+r4 = ''.join(cs(CL[c]+'4', HDRS[c], 3 if c in UNITS else 2,'s',strings,str_map) for c in range(12))
+rows.append('<row r="4" ht="104.25" customHeight="1">' + r4 + '</row>')
+
+r5 = ''.join(cs(CL[c]+'5', UNITS.get(c,''), 4,'s',strings,str_map) for c in range(12))
+rows.append('<row r="5" ht="24.75" customHeight="1">' + r5 + '</row>')
 
 for i, e in enumerate(entries):
-    r = TMPL + i
-    if i > 0:
-        clone_row(TMPL, r)
-    rcd = chr(10).join(f"{j+1}. {v}" for j,v in enumerate(e.get('surf2',[])))
-    vals = [
-        i + 1,
-        e.get('subj',''),
-        '',
-        e.get('name',''),
-        e.get('addr',''),
-        float(e['kva'])   if e.get('kva')   else '',
-        float(e['kv'])    if e.get('kv')    else '',
-        float(e['km'])    if e.get('km')    else '',
-        e.get('shtyl',''),
-        e.get('toke',''),
-        float(e['surf1']) if e.get('surf1') else '',
-        rcd,
-    ]
-    for ci, val in enumerate(vals):
-        ws.cell(r, ci + 1).value = val
+    r = 6 + i
+    rcd = chr(10).join(str(j+1)+'. '+v for j,v in enumerate(e.get('surf2',[])))
+    vals = [e.get('nr',i+1), e.get('subj',''), '', e.get('name',''), e.get('addr',''),
+            e.get('kva',''), e.get('kv',''), e.get('km',''),
+            e.get('shtyl',''), e.get('toke',''), e.get('surf1',''), rcd]
+    cells = []
+    for c, v in enumerate(vals):
+        st = 6 if c in WRAP_D else 5
+        if c in {0,5,6,7,10} and str(v).strip() != '':
+            try: cells.append(cs(CL[c]+str(r), float(v), st,'n',strings,str_map)); continue
+            except: pass
+        cells.append(cs(CL[c]+str(r), str(v), st,'s',strings,str_map))
+    rows.append('<row r="'+str(r)+'" ht="37.5" customHeight="1">'+''.join(cells)+'</row>')
+
+non_unit  = [c for c in range(12) if c not in UNITS]
+merges    = ['<mergeCell ref="A2:L2"/>'] + ['<mergeCell ref="'+CL[c]+'4:'+CL[c]+'5"/>' for c in non_unit]
+col_xml   = ''.join('<col min="'+str(c+1)+'" max="'+str(c+1)+'" width="'+str(COL_W[c])+'" customWidth="1"/>' for c in range(12))
+
+shared = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+shared += '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="'+str(len(strings))+'" uniqueCount="'+str(len(strings))+'">\n'
+for s in strings:
+    shared += '<si><t xml:space="preserve">' + xe(s) + '</t></si>\n'
+shared += '</sst>'
+
+sheet = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+    '<sheetViews><sheetView workbookViewId="0"/></sheetViews>'
+    '<cols>' + col_xml + '</cols>'
+    '<sheetData>' + ''.join(rows) + '</sheetData>'
+    '<mergeCells count="' + str(len(merges)) + '">' + ''.join(merges) + '</mergeCells>'
+    '</worksheet>')
 
 buf = io.BytesIO()
-wb.save(buf)
+with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+    zf.writestr('[Content_Types].xml',        CT_XML)
+    zf.writestr('_rels/.rels',                RELS_XML)
+    zf.writestr('xl/_rels/workbook.xml.rels', WB_RELS_XML)
+    zf.writestr('xl/workbook.xml',            WORKBOOK_XML)
+    zf.writestr('xl/styles.xml',              STYLES_XML)
+    zf.writestr('xl/sharedStrings.xml',       shared)
+    zf.writestr('xl/worksheets/sheet1.xml',   sheet)
 base64.b64encode(buf.getvalue()).decode()
 `);
 
-    // result is b64 string of the filled xlsx
-    const binStr = atob(result);
-    const bytes  = new Uint8Array(binStr.length);
-    for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
-    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-
+    const bin   = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const blob = new Blob([bytes], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
     const dateStr  = new Date().toISOString().slice(0,10).replace(/-/g,'');
-    const safeName = (entries[0]?.subj || 'export').replace(/[^a-zA-Z0-9_\u00C0-\u024F]/g,'_').slice(0,30);
+    const safeName = (entries[0]?.subj || 'export')
+                       .replace(/[^a-zA-Z0-9_\u00C0-\u024F]/g,'_').slice(0,30);
     saveAs(blob, `Rregjistri_Elektrik_${safeName}_${dateStr}.xlsx`);
 
   } catch(err) {
-    alert('Gabim gjatë gjenerimit: ' + err.message);
+    alert('Gabim gjate gjenerimit: ' + err.message);
     console.error(err);
   } finally {
-    btn.innerHTML = origText;
+    btn.innerHTML = origHTML;
     btn.disabled  = false;
   }
 }
