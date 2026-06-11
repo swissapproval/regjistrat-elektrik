@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Swiss Approval Albania – Rregjistri Elektrik</title>
+  <title>Swiss Approval Albania – Regjistri Elektrik</title>
 
   <style>
     :root {
@@ -674,7 +674,7 @@ async function generateXlsx() {
   try {
     const entries = getEntries();
 
-    const response = await fetch('./Placeholder_rregjistri_elektrik(3).xlsx');
+    const response = await fetch('./Placeholder_rregjistri_elektrik.xlsx');
     if (!response.ok) throw new Error('Placeholder_rregjistri_elektrik.xlsx nuk u gjet.');
 
     const arrayBuffer = await response.arrayBuffer();
