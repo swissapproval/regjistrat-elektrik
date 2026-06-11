@@ -674,12 +674,20 @@ async function generateXlsx() {
   try {
     const entries = getEntries();
 
-    const response = await fetch('./Placeholder_rregjistri_elektrik.xlsx');
+    const response = await fetch('./Placeholder_rregjistri_elektrik(3).xlsx');
     if (!response.ok) throw new Error('Placeholder_rregjistri_elektrik.xlsx nuk u gjet.');
 
     const arrayBuffer = await response.arrayBuffer();
     const wb = XLSX.read(arrayBuffer, { type: 'array', cellStyles: true });
     const ws = wb.Sheets[wb.SheetNames[0]];
+
+    // Clear existing placeholder/data rows starting at row 6
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let row = 6; row <= range.e.r + 1; row++) {
+      for (const col of ['A','B','C','D','E','F','G','H','I','J','K','L']) {
+        delete ws[col + row];
+      }
+    }
 
     entries.forEach((e, idx) => {
       const r = 6 + idx;
@@ -695,12 +703,13 @@ async function generateXlsx() {
       ws['I' + r] = { t:'s', v:e.shtyl || '' };
       ws['J' + r] = { t:'s', v:e.toke || '' };
       ws['K' + r] = { t:'s', v:e.surf1 || '' };
-      ws['L' + r] = { t:'s', v:(e.surf2 || []).join('\n') };
+      ws['L' + r] = { t:'s', v:(e.surf2 || []).join(', ') };
 
       for (const col of ['A','B','C','D','E','F','G','H','I','J','K','L']) {
         const templateCell = ws[col + '6'];
-        if (templateCell && templateCell.s && ws[col + r]) {
-          ws[col + r].s = JSON.parse(JSON.stringify(templateCell.s));
+        if (templateCell && ws[col + r]) {
+          if (templateCell.s) ws[col + r].s = JSON.parse(JSON.stringify(templateCell.s));
+          if (templateCell.z) ws[col + r].z = templateCell.z;
         }
       }
     });
