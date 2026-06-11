@@ -658,140 +658,68 @@ window.addEventListener('load', () => {
   if (typeof loadPyodide === 'function') loadPyodideOnce().catch(() => {});
 });
 
+
 async function generateXlsx() {
   const errors = validate();
   if (errors.length) {
     alert('Ju lutemi plotesoni fushat e meposhtme:\n\n' + errors.join('\n'));
     return;
   }
+
   const btn = document.querySelector('.gen-btn');
   const origHTML = btn.innerHTML;
   btn.innerHTML = '⏳ Duke gjeneruar...';
   btn.disabled = true;
+
   try {
-    await loadPyodideOnce();
     const entries = getEntries();
 
-    // Pass all data and XML templates as pyodide globals (avoids any quoting issues)
-    pyodide.globals.set('entries_json',    JSON.stringify(entries));
-    pyodide.globals.set('CT_XML',          "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/><Override PartName=\"/xl/worksheets/sheet1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/><Override PartName=\"/xl/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml\"/><Override PartName=\"/xl/sharedStrings.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml\"/></Types>");
-    pyodide.globals.set('RELS_XML',        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>");
-    pyodide.globals.set('WB_RELS_XML',     "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/><Relationship Id=\"rId2\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/><Relationship Id=\"rId3\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings\" Target=\"sharedStrings.xml\"/></Relationships>");
-    pyodide.globals.set('WORKBOOK_XML',    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><sheets><sheet name=\"Elektriket\" sheetId=\"1\" r:id=\"rId1\"/></sheets></workbook>");
-    pyodide.globals.set('STYLES_XML',      "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><fonts count=\"4\"><font><sz val=\"11\"/><name val=\"Calibri\"/></font><font><sz val=\"14\"/><name val=\"Calibri\"/></font><font><sz val=\"12\"/><name val=\"Calibri\"/></font><font><sz val=\"14\"/><b/><name val=\"Calibri\"/></font></fonts><fills count=\"4\"><fill><patternFill patternType=\"none\"/></fill><fill><patternFill patternType=\"gray125\"/></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FF99CCFF\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFFFFFFF\"/></patternFill></fill></fills><borders count=\"3\"><border><left/><right/><top/><bottom/></border><border><left style=\"thin\"><color rgb=\"FF000000\"/></left><right style=\"thin\"><color rgb=\"FF000000\"/></right><top style=\"thin\"><color rgb=\"FF000000\"/></top><bottom style=\"thin\"><color rgb=\"FF000000\"/></bottom></border><border><left style=\"thin\"><color rgb=\"FF000000\"/></left><right style=\"thin\"><color rgb=\"FF000000\"/></right><top style=\"thin\"><color rgb=\"FF000000\"/></top><bottom/></border></borders><cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs><cellXfs count=\"7\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\"/><xf numFmtId=\"0\" fontId=\"3\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"2\" fillId=\"2\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"top\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"2\" fillId=\"2\" borderId=\"2\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"top\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"2\" fillId=\"2\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"top\" wrapText=\"0\"/></xf><xf numFmtId=\"0\" fontId=\"1\" fillId=\"3\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"top\" wrapText=\"0\"/></xf><xf numFmtId=\"0\" fontId=\"1\" fillId=\"3\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"top\" wrapText=\"1\"/></xf></cellXfs></styleSheet>");
+    const response = await fetch('./Placeholder_rregjistri_elektrik.xlsx');
+    if (!response.ok) throw new Error('Placeholder_rregjistri_elektrik.xlsx nuk u gjet.');
 
-    const b64 = await pyodide.runPythonAsync(`
-import zipfile, io, base64, json
+    const arrayBuffer = await response.arrayBuffer();
+    const wb = XLSX.read(arrayBuffer, { type: 'array', cellStyles: true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
 
-def xe(s):
-    s = str(s) if s is not None else ''
-    return s.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;').replace('"','&quot;')
+    entries.forEach((e, idx) => {
+      const r = 6 + idx;
 
-def si(strings, str_map, s):
-    s = str(s) if s is not None else ''
-    if s not in str_map:
-        str_map[s] = len(strings)
-        strings.append(s)
-    return str_map[s]
+      ws['A' + r] = { t:'n', v: idx + 1 };
+      ws['B' + r] = { t:'s', v: e.subj };
+      ws['C' + r] = { t:'s', v: '' };
+      ws['D' + r] = { t:'s', v: e.name };
+      ws['E' + r] = { t:'s', v: e.addr };
+      ws['F' + r] = e.kva ? { t:'n', v:Number(e.kva) } : { t:'s', v:'' };
+      ws['G' + r] = { t:'s', v:e.kv || '' };
+      ws['H' + r] = e.km ? { t:'n', v:Number(e.km) } : { t:'s', v:'' };
+      ws['I' + r] = { t:'s', v:e.shtyl || '' };
+      ws['J' + r] = { t:'s', v:e.toke || '' };
+      ws['K' + r] = { t:'s', v:e.surf1 || '' };
+      ws['L' + r] = { t:'s', v:(e.surf2 || []).join('\n') };
 
-def cs(ref, val, s, t, strings, str_map):
-    if t == 'n':
-        return '<c r="' + ref + '" s="' + str(s) + '" t="n"><v>' + xe(str(val)) + '</v></c>'
-    idx = si(strings, str_map, val)
-    return '<c r="' + ref + '" s="' + str(s) + '" t="s"><v>' + str(idx) + '</v></c>'
-
-entries  = json.loads(entries_json)
-strings  = []
-str_map  = {}
-CL       = [chr(65+i) for i in range(12)]
-HDRS     = ['Nr.','Emertimi i Subjektit','Nr. Prot dhe data e kerkeses per regjistrim',
-            'Emertimi i impiantit, pajisjes, instalimit',
-            'Vendndodhja e pajisjes, impiantit, instalimit elektrik',
-            'Fuqia e plote e instaluar','Niveli i tensionit','Gjatesia e linjes',
-            'Lloji i shtyllezimit dhe vendosjes','Lloji i tokezimit',
-            'Siperfaqja dhe lartesia e mbrojtur nga rrufepritesi',
-            'Sip. e ambjentit te instalim brendsh./dispozitivi Diferencial']
-UNITS    = {5:'(kVA)',6:'(kV)',7:'(km)',10:'(m2)',11:'(m2)'}
-WRAP_D   = {1,3,4,11}
-COL_W    = [4.1,21.0,16.4,38.0,30.9,22.1,21.7,21.0,13.4,21.0,63.7,31.6]
-
-rows = []
-rows.append('<row r="1" ht="5" customHeight="1"></row>')
-title = 'DATABASE E RREGJISTRIMIT TE PAJISJEVE, IMPIANTEVE, INSTALIMEVE ELEKTRIKE'
-rows.append('<row r="2" ht="18" customHeight="1">' + cs('A2',title,1,'s',strings,str_map) + '</row>')
-rows.append('<row r="3" ht="11.25" customHeight="1"></row>')
-
-r4 = ''.join(cs(CL[c]+'4', HDRS[c], 3 if c in UNITS else 2,'s',strings,str_map) for c in range(12))
-rows.append('<row r="4" ht="104.25" customHeight="1">' + r4 + '</row>')
-
-r5 = ''.join(cs(CL[c]+'5', UNITS.get(c,''), 4,'s',strings,str_map) for c in range(12))
-rows.append('<row r="5" ht="24.75" customHeight="1">' + r5 + '</row>')
-
-for i, e in enumerate(entries):
-    r = 6 + i
-    rcd = chr(10).join(str(j+1)+'. '+v for j,v in enumerate(e.get('surf2',[])))
-    vals = [e.get('nr',i+1), e.get('subj',''), '', e.get('name',''), e.get('addr',''),
-            e.get('kva',''), e.get('kv',''), e.get('km',''),
-            e.get('shtyl',''), e.get('toke',''), e.get('surf1',''), rcd]
-    cells = []
-    for c, v in enumerate(vals):
-        st = 6 if c in WRAP_D else 5
-        if c in {0,5,6,7,10} and str(v).strip() != '':
-            try: cells.append(cs(CL[c]+str(r), float(v), st,'n',strings,str_map)); continue
-            except: pass
-        cells.append(cs(CL[c]+str(r), str(v), st,'s',strings,str_map))
-    rows.append('<row r="'+str(r)+'" ht="37.5" customHeight="1">'+''.join(cells)+'</row>')
-
-non_unit  = [c for c in range(12) if c not in UNITS]
-merges    = ['<mergeCell ref="A2:L2"/>'] + ['<mergeCell ref="'+CL[c]+'4:'+CL[c]+'5"/>' for c in non_unit]
-col_xml   = ''.join('<col min="'+str(c+1)+'" max="'+str(c+1)+'" width="'+str(COL_W[c])+'" customWidth="1"/>' for c in range(12))
-
-shared = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
-shared += '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="'+str(len(strings))+'" uniqueCount="'+str(len(strings))+'">\n'
-for s in strings:
-    shared += '<si><t xml:space="preserve">' + xe(s) + '</t></si>\n'
-shared += '</sst>'
-
-sheet = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-    '<sheetViews><sheetView workbookViewId="0"/></sheetViews>'
-    '<cols>' + col_xml + '</cols>'
-    '<sheetData>' + ''.join(rows) + '</sheetData>'
-    '<mergeCells count="' + str(len(merges)) + '">' + ''.join(merges) + '</mergeCells>'
-    '</worksheet>')
-
-buf = io.BytesIO()
-with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
-    zf.writestr('[Content_Types].xml',        CT_XML)
-    zf.writestr('_rels/.rels',                RELS_XML)
-    zf.writestr('xl/_rels/workbook.xml.rels', WB_RELS_XML)
-    zf.writestr('xl/workbook.xml',            WORKBOOK_XML)
-    zf.writestr('xl/styles.xml',              STYLES_XML)
-    zf.writestr('xl/sharedStrings.xml',       shared)
-    zf.writestr('xl/worksheets/sheet1.xml',   sheet)
-base64.b64encode(buf.getvalue()).decode()
-`);
-
-    const bin   = atob(b64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    const blob = new Blob([bytes], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      for (const col of ['A','B','C','D','E','F','G','H','I','J','K','L']) {
+        const templateCell = ws[col + '6'];
+        if (templateCell && templateCell.s && ws[col + r]) {
+          ws[col + r].s = JSON.parse(JSON.stringify(templateCell.s));
+        }
+      }
     });
-    const dateStr  = new Date().toISOString().slice(0,10).replace(/-/g,'');
-    const safeName = (entries[0]?.subj || 'export')
-                       .replace(/[^a-zA-Z0-9_\u00C0-\u024F]/g,'_').slice(0,30);
-    saveAs(blob, `Rregjistri_Elektrik_${safeName}_${dateStr}.xlsx`);
+
+    const out = XLSX.write(wb, { bookType:'xlsx', type:'array', cellStyles:true });
+
+    saveAs(
+      new Blob([out], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      'Rregjistri_Elektrik.xlsx'
+    );
 
   } catch(err) {
     alert('Gabim gjate gjenerimit: ' + err.message);
     console.error(err);
   } finally {
     btn.innerHTML = origHTML;
-    btn.disabled  = false;
+    btn.disabled = false;
   }
 }
-
 
 
 // ════════════════════════════════════════════════════════
