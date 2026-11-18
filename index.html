@@ -473,6 +473,7 @@
 
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
 <script>
@@ -672,79 +673,86 @@ async function generateXlsx() {
   try {
     const entries = getEntries();
 
+    // ExcelJS preserves the template's actual cell styles when writing XLSX.
+    // SheetJS Community Edition can read style metadata but does not reliably
+    // write fonts, borders, fills and alignment back into the generated file.
     const response = await fetch('./Placeholder_rregjistri_elektrik.xlsx');
-    if (!response.ok) throw new Error('Placeholder_rregjistri_elektrik.xlsx nuk u gjet.');
+    if (!response.ok) {
+      throw new Error('Placeholder_rregjistri_elektrik.xlsx nuk u gjet.');
+    }
 
-    const arrayBuffer = await response.arrayBuffer();
-    const wb = XLSX.read(arrayBuffer, { type: 'array', cellStyles: true });
-    const ws = wb.Sheets[wb.SheetNames[0]];
+    const templateBuffer = await response.arrayBuffer();
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(templateBuffer);
 
-    // Capture the first data row's formatting BEFORE clearing any cells.
-    // Excel row 6 is row 1 of the table and is the formatting template.
-    const dataCols = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+    const worksheet = workbook.getWorksheet(1);
+    if (!worksheet) throw new Error('Fleta e punës nuk u gjet në placeholder.');
+
+    const firstDataRowNumber = 6;
+    const templateRow = worksheet.getRow(firstDataRowNumber);
+    const columns = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+
+    // Snapshot styles from the original first data row before clearing values.
     const templateStyles = {};
-    for (const col of dataCols) {
-      const templateCell = ws[col + '6'];
-      if (templateCell) {
-        templateStyles[col] = {
-          s: templateCell.s ? JSON.parse(JSON.stringify(templateCell.s)) : undefined,
-          z: templateCell.z
-        };
-      }
-    }
-    const templateRowInfo = ws['!rows'] && ws['!rows'][5]
-      ? JSON.parse(JSON.stringify(ws['!rows'][5]))
-      : undefined;
+    columns.forEach(col => {
+      const cell = templateRow.getCell(col.charCodeAt(0) - 64);
+      templateStyles[col] = {
+        style: JSON.parse(JSON.stringify(cell.style || {})),
+        numFmt: cell.numFmt
+      };
+    });
+    const templateHeight = templateRow.height;
 
-    // Clear existing placeholder/data rows starting at row 6.
-    // The saved formatting above remains available for every generated row.
-    const range = XLSX.utils.decode_range(ws['!ref']);
-    for (let row = 6; row <= range.e.r + 1; row++) {
-      for (const col of dataCols) delete ws[col + row];
+    // Clear old generated values but retain the rest of the workbook and layout.
+    for (let rowNumber = firstDataRowNumber; rowNumber <= worksheet.rowCount; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+      columns.forEach(col => {
+        row.getCell(col.charCodeAt(0) - 64).value = null;
+      });
     }
 
-    entries.forEach((e, idx) => {
-      const r = 6 + idx;
+    entries.forEach((entry, index) => {
+      const rowNumber = firstDataRowNumber + index;
+      const row = worksheet.getRow(rowNumber);
+      const values = [
+        index + 1,
+        entry.subj || '',
+        '',
+        entry.name || '',
+        entry.addr || '',
+        entry.kva ? Number(entry.kva) : '',
+        entry.kv || '',
+        entry.km ? Number(entry.km) : '',
+        entry.shtyl || '',
+        entry.toke || '',
+        entry.surf1 || '',
+        (entry.surf2 || []).join(', ')
+      ];
 
-      ws['A' + r] = { t:'n', v: idx + 1 };
-      ws['B' + r] = { t:'s', v: e.subj };
-      ws['C' + r] = { t:'s', v: '' };
-      ws['D' + r] = { t:'s', v: e.name };
-      ws['E' + r] = { t:'s', v: e.addr };
-      ws['F' + r] = e.kva ? { t:'n', v:Number(e.kva) } : { t:'s', v:'' };
-      ws['G' + r] = { t:'s', v:e.kv || '' };
-      ws['H' + r] = e.km ? { t:'n', v:Number(e.km) } : { t:'s', v:'' };
-      ws['I' + r] = { t:'s', v:e.shtyl || '' };
-      ws['J' + r] = { t:'s', v:e.toke || '' };
-      ws['K' + r] = { t:'s', v:e.surf1 || '' };
-      ws['L' + r] = { t:'s', v:(e.surf2 || []).join(', ') };
+      values.forEach((value, colIndex) => {
+        const cell = row.getCell(colIndex + 1);
+        cell.value = value;
 
-      // Apply the exact style/font/number format from the first table row
-      // to every generated cell, including rows beyond the original template.
-      for (const col of dataCols) {
-        const cell = ws[col + r];
-        const style = templateStyles[col];
-        if (cell && style) {
-          if (style.s) cell.s = JSON.parse(JSON.stringify(style.s));
-          if (style.z) cell.z = style.z;
+        // Clone the full style object from the corresponding cell in row 6.
+        // This carries font, borders, fill, alignment and protection.
+        cell.style = JSON.parse(JSON.stringify(templateStyles[columns[colIndex]].style));
+        if (templateStyles[columns[colIndex]].numFmt) {
+          cell.numFmt = templateStyles[columns[colIndex]].numFmt;
         }
-      }
+      });
 
-      // Match the template row height as well, when it is defined.
-      if (templateRowInfo) {
-        if (!ws['!rows']) ws['!rows'] = [];
-        ws['!rows'][r - 1] = JSON.parse(JSON.stringify(templateRowInfo));
-      }
+      if (templateHeight !== undefined) row.height = templateHeight;
+      row.commit();
     });
 
-    const out = XLSX.write(wb, { bookType:'xlsx', type:'array', cellStyles:true });
+    const output = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([output], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
 
-    saveAs(
-      new Blob([out], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
-      'Rregjistri_Elektrik.xlsx'
-    );
+    saveAs(blob, 'Rregjistri_Elektrik.xlsx');
 
-  } catch(err) {
+  } catch (err) {
     alert('Gabim gjate gjenerimit: ' + err.message);
     console.error(err);
   } finally {
